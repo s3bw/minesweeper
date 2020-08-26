@@ -1,8 +1,8 @@
-<h1 align="centre">
+<h1 align="center">
     Minesweeper
 </h1>
 
-<h4 align="centre">
+<h4 align="center">
     The classic minesweeper game in python
 </h4>
 
@@ -14,10 +14,10 @@ python minesweeper.py
 
 ## Gameplay
 
-<div align="centre">
-    ![alt text](./static/inprogress.png)
-</div>
+<p align="center">
+    <img src="https://raw.githubusercontent.com/foxyblue/minesweeper/master/static/inprogress.png"/>
+</p>
 
-<div align="centre">
-    ![alt text](./static/losing_game.png)
-</div>
+<p align="center">
+    <img src="https://raw.githubusercontent.com/foxyblue/minesweeper/master/static/losing_game.png"/>
+</p>
