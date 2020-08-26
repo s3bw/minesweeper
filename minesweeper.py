@@ -56,7 +56,7 @@ def render():
 safe = True
 playing = True
 while playing:
-    pygame.time.delay(29)
+    pygame.time.delay(5)
 
     pos = None
     for event in pygame.event.get():
