@@ -199,18 +199,6 @@ class Board:
             self._zero_search(tile, searched)
         return True
 
-    def show_mines(self):
-        if not self._revealed:
-            self._revealed = True
-
-            for pos in self.mines:
-                px, py = pos
-                tile = self.grid[px][py]
-                if pos not in self.flags:
-                    tile.toggle_visible()
-                else:
-                    tile.set_green()
-
     def _zero_search(self, tile, searched):
         if tile.n != 0:
             return searched
@@ -230,6 +218,18 @@ class Board:
 
         return searched
 
+    def show_mines(self):
+        if not self._revealed:
+            self._revealed = True
+
+            for pos in self.mines:
+                px, py = pos
+                tile = self.grid[px][py]
+                if pos not in self.flags:
+                    tile.toggle_visible()
+                else:
+                    tile.set_green()
+
     def __init__(self, x, y, mines: int):
         self.x = x
         self.y = y
@@ -242,9 +242,9 @@ class Board:
         y_blocks = y * BLOCK_SIZE
 
         self.tl = (GRIDPADDING, GRIDPADDING)
-        self.tr = (GRIDPADDING, GRIDPADDING + x_blocks)
-        self.bl = (GRIDPADDING + y_blocks, GRIDPADDING)
-        self.br = (GRIDPADDING + y_blocks, GRIDPADDING + x_blocks)
+        self.tr = (GRIDPADDING, GRIDPADDING + y_blocks)
+        self.bl = (GRIDPADDING + x_blocks, GRIDPADDING)
+        self.br = (GRIDPADDING + x_blocks, GRIDPADDING + y_blocks)
 
     def _construct_grid(self, x, y, first_pos):
         exclude = {pos for pos in _around(first_pos)}
@@ -293,11 +293,13 @@ class Board:
 
         # Outline
         for i in range(0, self.x + 1):
-            left = add(self.tl, (i*16, 0))
-            right = add(self.tr, (i*16, 0))
+            diff = (i*16, 0)
+            left = add(self.tl, diff)
+            right = add(self.tr, diff)
             pygame.draw.line(win, colours.BLACK, left , right, 1)
 
         for i in range(0, self.y + 1):
-            top = add(self.tl, (0, i*16))
-            bottom = add(self.bl, (0, i*16))
+            diff = (0, i*16)
+            top = add(self.tl, diff)
+            bottom = add(self.bl, diff)
             pygame.draw.line(win, colours.BLACK, top, bottom, 1)
