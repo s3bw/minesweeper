@@ -12,7 +12,7 @@ from consts import BLOCK_SIZE
 
 from sprites import (
     mine, detonation,
-    flag, greenflag,
+    flag, greenflag, yellowflag,
     zero,
     one,
     two,
@@ -97,6 +97,7 @@ class Flag:
 
     Red = "red"
     Green = "green"
+    Yellow = "yellow"
 
 
 class Tile:
@@ -117,8 +118,10 @@ class Tile:
         if self.flagged:
             if self._flag_colour == Flag.Red:
                 win.blit(flag, pos)
-            else:
+            elif self._flag_colour == Flag.Green:
                 win.blit(greenflag, pos)
+            else:
+                win.blit(yellowflag, pos)
 
         if not self.visible:
             return
@@ -136,7 +139,7 @@ class Tile:
         if self.visible:
             return
 
-        self.visible= True
+        self.visible = True
 
     def toggle_flag(self):
         if self.flagged:
@@ -149,6 +152,9 @@ class Tile:
 
     def set_green(self):
         self._flag_colour = Flag.Green
+
+    def set_yellow(self):
+        self._flag_colour = Flag.Yellow
 
     def increment(self):
         if self.type == TileType.Mine:
@@ -206,6 +212,7 @@ class Board:
 
             searched = set()
             tile.toggle_visible()
+            self.n_visible -= 1
             self._zero_search(tile, searched)
         return True
 
@@ -224,9 +231,26 @@ class Board:
                     searched.add(tile)
                     searched = self._zero_search(tile, searched)
 
-                tile.toggle_visible()
+                if not tile.visible:
+                    tile.toggle_visible()
+                    self.n_visible -= 1
 
         return searched
+
+    def check_win(self) -> bool:
+        return self.n_visible == self.n_mines
+
+    def display_win(self):
+        if not self._revealed:
+            self._revealed = True
+
+            for pos in self.mines:
+                px, py = pos
+                tile = self.grid[px][py]
+                tile.set_yellow()
+                if not tile.flagged:
+                    tile.toggle_flag()
+                    self.flags.add(tile)
 
     def show_mines(self):
         if not self._revealed:
@@ -243,6 +267,7 @@ class Board:
     def __init__(self, x, y, mines: int):
         self.x = x
         self.y = y
+        self.n_visible = x * y
         self.n_mines = mines
         self.flags = set()
         self.grid = None

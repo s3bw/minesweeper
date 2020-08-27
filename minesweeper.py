@@ -67,17 +67,24 @@ while playing:
         leftclick, _, rightclick = pygame.mouse.get_pressed()
         pos = pygame.mouse.get_pos()
 
-        if rightclick:
+        if rightclick and safe:
             board.rightclick(pos)
             flag_count = _render_flg_count(
                 board.n_mines, len(board.flags)
             )
 
-        elif leftclick and not safe:
-            playing = False
+        elif leftclick and safe:
+            safe = board.leftclick(pos)
 
         elif leftclick:
-            safe = board.leftclick(pos)
+            playing = False
+
+    if board.check_win():
+        board.display_win()
+        flag_count = _render_flg_count(
+            board.n_mines, len(board.flags)
+        )
+        safe = False
 
     if event.type == pygame.QUIT:
         playing = False

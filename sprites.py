@@ -27,6 +27,8 @@ seven = Sprite(16, 32).sprite
 eight = Sprite(32, 32).sprite
 
 detonation = Sprite(48, 0).sprite
+mine = Sprite(0, 48).sprite
+
 flag = Sprite(48, 16).sprite
 greenflag = Sprite(48, 32).sprite
-mine = Sprite(0, 48).sprite
+yellowflag = Sprite(16, 48).sprite
