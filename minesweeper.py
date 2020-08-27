@@ -56,32 +56,31 @@ def render():
 safe = True
 playing = True
 while playing:
-    pygame.time.delay(5)
 
     pos = None
-    for event in pygame.event.get():
+    event = pygame.event.wait()
 
-        if not safe:
-            board.show_mines()
+    if not safe:
+        board.show_mines()
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            leftclick, _, rightclick = pygame.mouse.get_pressed()
-            pos = pygame.mouse.get_pos()
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        leftclick, _, rightclick = pygame.mouse.get_pressed()
+        pos = pygame.mouse.get_pos()
 
-            if rightclick:
-                board.rightclick(pos)
-                flag_count = _render_flg_count(
-                    board.n_mines, len(board.flags)
-                )
+        if rightclick:
+            board.rightclick(pos)
+            flag_count = _render_flg_count(
+                board.n_mines, len(board.flags)
+            )
 
-            elif leftclick and not safe:
-                playing = False
-
-            elif leftclick:
-                safe = board.leftclick(pos)
-
-        if event.type == pygame.QUIT:
+        elif leftclick and not safe:
             playing = False
+
+        elif leftclick:
+            safe = board.leftclick(pos)
+
+    if event.type == pygame.QUIT:
+        playing = False
 
     render()
 
