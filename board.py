@@ -184,6 +184,9 @@ class Board:
 
         if self._inside_board(realx, realy):
             tile = self.grid[realx][realy]
+            if tile.flagged:
+                return True
+
             if tile.type == TileType.Mine:
                 tile.type = TileType.Detonation
                 return False
