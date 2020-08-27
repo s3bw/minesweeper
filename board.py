@@ -172,14 +172,24 @@ class Board:
     def rightclick(self, pos):
         realx, realy = _floor_pos(pos)
         if self._inside_board(realx, realy):
-            if self.grid:
-                self.grid[realx][realy].toggle_flag()
-                self.flags.add((realx, realy))
+            if self._grid_constructed:
+                tile = self.grid[realx][realy]
+                if not tile.visible:
+                    tile.toggle_flag()
+
+                    # Tiles don't ever start as flagged
+                    # thus .remove will only ever be
+                    # called after .add
+                    if tile.flagged:
+                        self.flags.add((realx, realy))
+                    else:
+                        self.flags.remove((realx, realy))
 
     def leftclick(self, pos) -> bool:
         """The return value determines if the player survived."""
         realx, realy = _floor_pos(pos)
-        if not self.grid:
+        if not self._grid_constructed:
+            self._grid_constructed = True
             self.grid = self._construct_grid(self.x, self.y, (realx, realy))
 
         if self._inside_board(realx, realy):
@@ -236,6 +246,7 @@ class Board:
         self.n_mines = mines
         self.flags = set()
         self.grid = None
+        self._grid_constructed = False
         self._revealed = False
 
         x_blocks = x * BLOCK_SIZE
