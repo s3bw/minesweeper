@@ -177,43 +177,51 @@ class Board:
 
     def rightclick(self, pos):
         realx, realy = _floor_pos(pos)
-        if self._inside_board(realx, realy):
-            if self._grid_constructed:
-                tile = self.grid[realx][realy]
-                if not tile.visible:
-                    tile.toggle_flag()
+        if not self._inside_board(realx, realy):
+            return
 
-                    # Tiles don't ever start as flagged
-                    # thus .remove will only ever be
-                    # called after .add
-                    if tile.flagged:
-                        self.flags.add((realx, realy))
-                    else:
-                        self.flags.remove((realx, realy))
+        if not self._grid_constructed:
+            return
+
+        tile = self.grid[realx][realy]
+        if tile.visible:
+            return
+
+        tile.toggle_flag()
+
+        # Tiles don't ever start as flagged
+        # thus .remove will only ever be
+        # called after .add
+        if tile.flagged:
+            self.flags.add((realx, realy))
+        else:
+            self.flags.remove((realx, realy))
 
     def leftclick(self, pos) -> bool:
         """The return value determines if the player survived."""
         realx, realy = _floor_pos(pos)
+        if not self._inside_board(realx, realy):
+            return True
+
         if not self._grid_constructed:
             self._grid_constructed = True
             self.grid = self._construct_grid(self.x, self.y, (realx, realy))
 
-        if self._inside_board(realx, realy):
-            tile = self.grid[realx][realy]
-            if tile.flagged:
-                return True
+        tile = self.grid[realx][realy]
+        if tile.flagged:
+            return True
 
-            if tile.type == TileType.Mine:
-                tile.type = TileType.Detonation
-                return False
+        if tile.type == TileType.Mine:
+            tile.type = TileType.Detonation
+            return False
 
-            if tile.visible:
-                return True
+        if tile.visible:
+            return True
 
-            searched = set()
-            tile.toggle_visible()
-            self.n_visible -= 1
-            self._zero_search(tile, searched)
+        searched = set()
+        tile.toggle_visible()
+        self.n_visible -= 1
+        self._zero_search(tile, searched)
         return True
 
     def _zero_search(self, tile, searched):
