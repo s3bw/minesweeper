@@ -6,24 +6,31 @@
     The classic minesweeper game in python
 </h4>
 
+## Setup
+
+```bash
+python3 -m venv venv
+venv/bin/pip install pyxel
+```
+
 ## Usage
 
 ```bash
-python minesweeper.py
+venv/bin/python3 minesweeper.py
 ```
 
-## Gameplay
+## Controls
 
-<p align="center">
-    <img src="https://raw.githubusercontent.com/foxyblue/minesweeper/master/static/inprogress.png"/>
-</p>
+- **Left click** — reveal tile
+- **Right click** — toggle flag
+- **R** — restart game
 
-<p align="center">
-    <img src="https://raw.githubusercontent.com/foxyblue/minesweeper/master/static/losing_game.png"/>
-</p>
+## Web Export
 
-### Additional Tools
+Build a standalone `index.html` for GitHub Pages:
 
-- [**Image Editing:**](https://viliusle.github.io/miniPaint/) viliusle.github.io/miniPaint
-- [**Sprite Sheet Packer:**](https://www.codeandweb.com/free-sprite-sheet-packer) codeandweb.com/free-sprite-sheet-packer
-- [**Make PNG Transparent:**](https://onlinepngtools.com/create-transparent-png) onlinepngtools.com/create-transparent-png
+```bash
+venv/bin/pyxel package . minesweeper.py
+venv/bin/pyxel app2html minesweeper.pyxapp
+mv minesweeper.html index.html
+```

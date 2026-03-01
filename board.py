@@ -1,58 +1,23 @@
-import operator
 from enum import Enum
-from math import floor
 from random import randrange
 
-import pygame
 
-from library import colours
-
-from consts import GRIDPADDING
-from consts import BLOCK_SIZE
-
-from sprites import (
-    mine, detonation,
-    flag, greenflag, yellowflag,
-    zero,
-    one,
-    two,
-    three,
-    four,
-    five,
-    six,
-    seven,
-    eight,
-)
-
-
-transformations = [
-    (-1, 0),
-    (1, 0),
-    (-1, -1),
-    (+1, +1),
-    (0, -1),
-    (0, +1),
-    (-1, +1),
-    (+1, -1),
+TRANSFORMS = [
+    (-1, 0), (1, 0), (-1, -1), (1, 1),
+    (0, -1), (0, 1), (-1, 1), (1, -1),
 ]
 
 
 def add(a, b):
-    return tuple(map(operator.add, a, b))
+    return (a[0] + b[0], a[1] + b[1])
 
 
-def _normalise_pos(pos):
-    a, b = pos
-    return 16 * floor(a/16), 16 * floor(b/16)
-
-
-def _floor_pos(pos):
-    a, b = pos
-    return floor(a/16) - 1, floor(b/16) - 1
+def _around(pos):
+    for t in TRANSFORMS:
+        yield add(pos, t)
 
 
 class TileType(Enum):
-
     Empty = 0
     One = 1
     Two = 2
@@ -66,35 +31,7 @@ class TileType(Enum):
     Detonation = "detonation"
 
 
-def get_sprite(type):
-    if type == TileType.Mine:
-        return mine
-    if type == TileType.Detonation:
-        return detonation
-
-    if type == TileType.One:
-        return one
-    if type == TileType.Two:
-        return two
-    if type == TileType.Three:
-        return three
-    if type == TileType.Four:
-        return four
-    if type == TileType.Five:
-        return five
-    if type == TileType.Six:
-        return six
-    if type == TileType.Seven:
-        return seven
-    if type == TileType.Eight:
-        return eight
-
-    if type == TileType.Empty:
-        return zero
-
-
 class Flag:
-
     Red = "red"
     Green = "green"
     Yellow = "yellow"
@@ -110,42 +47,12 @@ class Tile:
         self._flag_colour = Flag.Red
         self.visible = False
 
-    def render(self, win):
-        pos = (
-            GRIDPADDING + (self.x * BLOCK_SIZE),
-            GRIDPADDING + (self.y * BLOCK_SIZE),
-        )
-        if self.flagged:
-            if self._flag_colour == Flag.Red:
-                win.blit(flag, pos)
-            elif self._flag_colour == Flag.Green:
-                win.blit(greenflag, pos)
-            else:
-                win.blit(yellowflag, pos)
-
-        if not self.visible:
-            return
-
-        sprite = get_sprite(self.type)
-        if sprite:
-            px, py = pos
-            rect = pygame.Rect(pos, (16, 16))
-            pygame.draw.rect(win, (170,170,170), rect)
-
-        if sprite is not zero:
-            win.blit(sprite, pos)
-
     def toggle_visible(self):
-        if self.visible:
-            return
-
-        self.visible = True
+        if not self.visible:
+            self.visible = True
 
     def toggle_flag(self):
-        if self.flagged:
-            self.flagged = False
-        else:
-            self.flagged = True
+        self.flagged = not self.flagged
 
     def set_type(self, type):
         self.type = type
@@ -163,116 +70,11 @@ class Tile:
         self.type = TileType(self.n)
 
     def around(self):
-        pos = (self.x, self.y)
-        yield from _around(pos)
-
-
-def _around(pos):
-    for t in transformations:
-        other = add(pos, t)
-        yield other
+        yield from _around((self.x, self.y))
 
 
 class Board:
-
-    def rightclick(self, pos):
-        realx, realy = _floor_pos(pos)
-        if not self._inside_board(realx, realy):
-            return
-
-        if not self._grid_constructed:
-            return
-
-        tile = self.grid[realx][realy]
-        if tile.visible:
-            return
-
-        tile.toggle_flag()
-
-        # Tiles don't ever start as flagged
-        # thus .remove will only ever be
-        # called after .add
-        if tile.flagged:
-            self.flags.add((realx, realy))
-        else:
-            self.flags.remove((realx, realy))
-
-    def leftclick(self, pos) -> bool:
-        """The return value determines if the player survived."""
-        realx, realy = _floor_pos(pos)
-        if not self._inside_board(realx, realy):
-            return True
-
-        if not self._grid_constructed:
-            self._grid_constructed = True
-            self.grid = self._construct_grid(self.x, self.y, (realx, realy))
-
-        tile = self.grid[realx][realy]
-        if tile.flagged:
-            return True
-
-        if tile.type == TileType.Mine:
-            tile.type = TileType.Detonation
-            return False
-
-        if tile.visible:
-            return True
-
-        searched = set()
-        tile.toggle_visible()
-        self.n_visible -= 1
-        self._zero_search(tile, searched)
-        return True
-
-    def _zero_search(self, tile, searched):
-        if tile.n != 0:
-            return searched
-
-        if tile.type == TileType.Mine or tile.flagged:
-            return searched
-
-        for pos in tile.around():
-            px, py = pos
-            if self._inside_board(px, py):
-                tile = self.grid[px][py]
-                if tile not in searched:
-                    searched.add(tile)
-                    searched = self._zero_search(tile, searched)
-
-                if not tile.visible:
-                    tile.toggle_visible()
-                    self.n_visible -= 1
-
-        return searched
-
-    def check_win(self) -> bool:
-        return self.n_visible == self.n_mines
-
-    def display_win(self):
-        if not self._revealed:
-            self._revealed = True
-
-            for pos in self.mines:
-                px, py = pos
-                tile = self.grid[px][py]
-                tile.set_yellow()
-                if not tile.flagged:
-                    tile.toggle_flag()
-                    self.flags.add(tile)
-
-    def show_mines(self):
-        if not self._revealed:
-            self._revealed = True
-
-            for pos in self.mines:
-                px, py = pos
-                tile = self.grid[px][py]
-                if pos not in self.flags:
-                    tile.toggle_visible()
-                else:
-                    tile.set_green()
-
-    def __init__(self, x, y, mines: int):
+    def __init__(self, x, y, mines):
         self.x = x
         self.y = y
         self.n_visible = x * y
@@ -281,69 +83,107 @@ class Board:
         self.grid = None
         self._grid_constructed = False
         self._revealed = False
+        self.mines = set()
 
-        x_blocks = x * BLOCK_SIZE
-        y_blocks = y * BLOCK_SIZE
-
-        self.tl = (GRIDPADDING, GRIDPADDING)
-        self.tr = (GRIDPADDING, GRIDPADDING + y_blocks)
-        self.bl = (GRIDPADDING + x_blocks, GRIDPADDING)
-        self.br = (GRIDPADDING + x_blocks, GRIDPADDING + y_blocks)
+    def _inside_board(self, x, y):
+        return 0 <= x < self.x and 0 <= y < self.y
 
     def _construct_grid(self, x, y, first_pos):
-        exclude = {pos for pos in _around(first_pos)}
+        exclude = set(_around(first_pos))
         exclude.add(first_pos)
 
-        # Generate Grid.
         grid = [
             [Tile(rx, ry, TileType.Empty) for ry in range(y)]
             for rx in range(x)
         ]
 
-        # Placing the mines on the board
         mines = set()
         while len(mines) < self.n_mines:
             mx, my = randrange(self.x), randrange(self.y)
-            if ((mx, my) not in mines) and ((mx, my) not in exclude):
+            if (mx, my) not in mines and (mx, my) not in exclude:
                 mines.add((mx, my))
-                tile = grid[mx][my]
-                tile.set_type(TileType.Mine)
+                grid[mx][my].set_type(TileType.Mine)
 
-        # Calculate Numbers surrounding mines
-        for mine in mines:
-            mx, my = mine
+        for mx, my in mines:
             tile = grid[mx][my]
             for ox, oy in tile.around():
                 if self._inside_board(ox, oy):
-                    other_tile = grid[ox][oy]
-                    if other_tile.type != TileType.Mine:
-                        other_tile.increment()
+                    other = grid[ox][oy]
+                    if other.type != TileType.Mine:
+                        other.increment()
 
         self.mines = mines
-
         return grid
 
-    def _inside_board(self, x, y):
-        return (0 <= x <= self.x - 1) and (0 <= y <= self.y - 1)
+    def rightclick(self, gx, gy):
+        if not self._inside_board(gx, gy):
+            return
+        if not self._grid_constructed:
+            return
+        tile = self.grid[gx][gy]
+        if tile.visible:
+            return
+        tile.toggle_flag()
+        if tile.flagged:
+            self.flags.add((gx, gy))
+        else:
+            self.flags.remove((gx, gy))
 
-    def _render_grid(self, win):
-        for row in self.grid:
-            for tile in row:
-                tile.render(win)
+    def leftclick(self, gx, gy):
+        if not self._inside_board(gx, gy):
+            return True
+        if not self._grid_constructed:
+            self._grid_constructed = True
+            self.grid = self._construct_grid(self.x, self.y, (gx, gy))
+        tile = self.grid[gx][gy]
+        if tile.flagged:
+            return True
+        if tile.type == TileType.Mine:
+            tile.type = TileType.Detonation
+            return False
+        if tile.visible:
+            return True
+        searched = set()
+        tile.toggle_visible()
+        self.n_visible -= 1
+        self._zero_search(tile, searched)
+        return True
 
-    def render(self, win):
-        if self.grid:
-            self._render_grid(win)
+    def _zero_search(self, tile, searched):
+        if tile.n != 0 or tile.type == TileType.Mine or tile.flagged:
+            return searched
+        for pos in tile.around():
+            px, py = pos
+            if self._inside_board(px, py):
+                t = self.grid[px][py]
+                if t not in searched:
+                    searched.add(t)
+                    searched = self._zero_search(t, searched)
+                if not t.visible:
+                    t.toggle_visible()
+                    self.n_visible -= 1
+        return searched
 
-        # Outline
-        for i in range(0, self.x + 1):
-            diff = (i*16, 0)
-            left = add(self.tl, diff)
-            right = add(self.tr, diff)
-            pygame.draw.line(win, colours.BLACK, left , right, 1)
+    def check_win(self):
+        return self.n_visible == self.n_mines
 
-        for i in range(0, self.y + 1):
-            diff = (0, i*16)
-            top = add(self.tl, diff)
-            bottom = add(self.bl, diff)
-            pygame.draw.line(win, colours.BLACK, top, bottom, 1)
+    def display_win(self):
+        if not self._revealed:
+            self._revealed = True
+            for mx, my in self.mines:
+                tile = self.grid[mx][my]
+                tile.set_yellow()
+                if not tile.flagged:
+                    tile.toggle_flag()
+                    self.flags.add((mx, my))
+
+    def show_mines(self):
+        if not self._revealed:
+            self._revealed = True
+            for pos in self.mines:
+                mx, my = pos
+                tile = self.grid[mx][my]
+                if pos not in self.flags:
+                    tile.toggle_visible()
+                else:
+                    tile.set_green()
